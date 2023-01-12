@@ -1,9 +1,5 @@
-function deleteAllData(db, dbName) {
-    if(dbName == "json") return db.clear()
-    const deleteData = db.all()
-    for(const data of deleteData) {
-        db.delete(data.ID)
-    }
+function deleteAllData(db) {
+    db.clear()
 }
 
 async function deleteXP(userId, guildId, db) {

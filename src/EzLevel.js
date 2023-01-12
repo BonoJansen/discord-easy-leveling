@@ -5,7 +5,6 @@ let database;
  * @property {string} startingXP The amount of XP you want to user to start with
  * @property {string} startingLevel The level you want the user to start with
  * @property {string} levelUpXP The amount of XP need to level up a user
- * @property {string} database The database you want. This can be json or sqlite
  */
 /**
  * @typedef {object} UserDataObject
@@ -45,17 +44,10 @@ class EasyLeveling extends EventEmitter {
         this.startingXP = options.startingXP || 1
         this.startingLevel = options.startingLevel || 1
         this.levelUpXP = options.levelUpXP || 100
-        if(options.database == 'json') {
+        
             this.db = new Database('./EasyLeveling.json')
             database = this.db
-	        this.dbName = 'json'
-        } else if(options.database == 'sqlite') {
-            this.db = require('quick.db')
-            database = this.db
-	        this.dbName = 'sqlite'
-        } else {
-            throw new Error("Easy Leveling Error: Database must be an option between a 'json' databse and a 'sqlite' database")
-        }
+        
         process.on('uncaughtException', (err) => {
             this.emit(events.error, err, undefined)
         })
@@ -83,18 +75,16 @@ class EasyLeveling extends EventEmitter {
                 await this.db.set(`${userId}-${guildId}.XP`, 0)
                 const userHasLevel = this.db.has(`${userId}-${guildId}.level`)
                 if(!userHasLevel) return await this.db.set(`${userId}-${guildId}.level`, 1)
-                if(this.dbName == 'json') {
-                    const newLevel = userLevelUp + 1
-                    this.db.set(`${userId}-${guildId}.level`, newLevel)
-                } else {
-                    await this.db.add(`${userId}-${guildId}.level`, 1)
-                }
-                const newLevel = this.db.get(`${userId}-${guildId}.level`)
+                
+                const newLevel = userLevelUp + 1
+                this.db.set(`${userId}-${guildId}.level`, newLevel)
+
+                await this.db.add(`${userId}-${guildId}.level`, 1)
+                const newUserLevel = this.db.get(`${userId}-${guildId}.level`)
                 const lastLevel = newLevel - 1
-                this.emit(events.UserLevelUpEvent, newLevel, lastLevel, userId, guildId, channelId)
+                this.emit(events.UserLevelUpEvent, newUserLevel, lastLevel, userId, guildId, channelId)
                 return
             }
-            if(this.dbName == 'json') {
                 const currectData = await this.db.get(`${userId}-${guildId}.XP`)
                 const XPoverTime = await this.db.get(`${userId}-${guildId}.XPoverTime`)
                 const newXPoverTime = XPoverTime + 1
@@ -102,9 +92,6 @@ class EasyLeveling extends EventEmitter {
                 await this.db.set(`${userId}-${guildId}.XP`, newData)
                 await this.db.set(`${userId}-${guildId}.XPoverTime`, newXPoverTime)
                 return
-            }
-            this.db.add(`${userId}-${guildId}.XP`, 1)
-            this.db.add(`${userId}-${guildId}.XPoverTime`, 1)
         } catch (error) {
             this.emit(events.error, error, 'addLevels')
         }
@@ -165,21 +152,6 @@ class EasyLeveling extends EventEmitter {
         }
     }
     /**
-     * get all data from the database. powered by quick.db
-     * @returns {AllData}
-     */
-    async getAllData() {
-        try {
-            const allData = this.db.all()
-            return allData
-        } catch (error) {
-            this.emit(events.error, error, 'getAllData')
-        }
-    }
-    async deleteAllData() {
-        deleteModule.deleteAllData(this.db, this.dbName)
-    }
-    /**
      * will delete a user's data from the database
      * @param {string} userId the id of the user you want to delete
      * @param {string} guildId the id of the guild you want the data deleted from
@@ -190,7 +162,7 @@ class EasyLeveling extends EventEmitter {
         try {
             deleteModule.deleteUserData(userId, guildId, this.db)
         } catch(err) {
-            this.emit(events.error, error, 'deleteUserData')
+            this.emit(events.error, err, 'deleteUserData')
         }
     }
     /**
@@ -206,7 +178,7 @@ class EasyLeveling extends EventEmitter {
         if(typeof amount != 'number') throw new Error("Easy Level TypeError: Type of 'amount' must be a number")
         try {
             const xpAmount = amount * 100
-            if(this.dbName == 'json') {
+
                 const currectData = await this.db.get(`${userId}-${guildId}.level`)
                 const newData = currectData - amount
                 const XPoverTime = await this.db.get(`${userId}-${guildId}.XPoverTime`)
@@ -214,9 +186,7 @@ class EasyLeveling extends EventEmitter {
                 this.db.set(`${userId}-${guildId}.level`, newData)
                 this.db.set(`${userId}-${guildId}.XPoverTime`, newXPoverTime)
                 return
-            }
-            this.db.subtract(`${userId}-${guildId}.level`, amount)
-            this.db.subtract(`${userId}-${guildId}.XPoverTime`, xpAmount)
+
         } catch (error) {
             this.emit(events.error, error, 'reduceLevels')
         }
@@ -233,7 +203,7 @@ class EasyLeveling extends EventEmitter {
         if(!amount) throw new Error('Easy Level Error: An amount must be provided!')
         try {
             if(typeof amount != 'number') throw new Error("Easy Level TypeError: Type of 'amount' must be a number")
-            if(this.dbName == 'json') {
+            
                 const currectData = await this.db.get(`${userId}-${guildId}.XP`)
                 const newData = currectData - amount
                 const XPoverTime = await this.db.get(`${userId}-${guildId}.XPoverTime`)
@@ -241,9 +211,7 @@ class EasyLeveling extends EventEmitter {
                 this.db.set(`${userId}-${guildId}.XP`, newData)
                 this.db.set(`${userId}-${guildId}.XPoverTime`, newXPoverTime)
                 return
-            }
-            this.db.subtract(`${userId}-${guildId}.XPoverTime`, amount)
-            this.db.subtract(`${userId}-${guildId}.XP`, amount) 
+            
         } catch (error) {
             this.emit(events.error, error, 'reduceXP')
         }
@@ -258,7 +226,7 @@ class EasyLeveling extends EventEmitter {
         if(!guildId) throw new Error('Easy level Error: guildId must be a valid discord guild')
         if(!amountOfUsers) throw new Error('Easy level Error: Amount of users must defined')
         if(typeof amountOfUsers != 'number') throw new TypeError('Easy Level TypeError: Type of \'amount of users\' must be a number')
-        if(this.dbName == 'json') {
+        
             const allData = await this.db.all()
             const XPforGuild = []
             for(const key of allData) {
@@ -279,27 +247,6 @@ class EasyLeveling extends EventEmitter {
                 top10.push(XPforGuild[i])
             }
             return top10
-        }
-        const allData = await this.db.all()
-        const XPforGuild = []
-        for(const key of allData) {
-            if(String(key.ID).includes(guildId)) {
-                XPforGuild.push({
-                    xpOverTime: key.data.XPoverTime,
-                    userId: key.data.userId,
-                    level: key.data.level,
-                    xp: key.data.XP
-                })
-            }
-        }
-        XPforGuild.sort((a, b) => {
-            return b.xpOverTime - a.xpOverTime
-        })
-        let top10 = []
-        for(let i = 0; i < amountOfUsers; i++) {
-            top10.push(XPforGuild[i])
-        }
-        return top10
     }
     /**
      * Generate a chart of the XP usage in a guild
@@ -311,7 +258,7 @@ class EasyLeveling extends EventEmitter {
         if(!guildId) throw new Error('Easy Level Error: A valid discord guild must be provided')
         if(!amountOfUsers) throw new Error('Easy level Error: Amount of users must defined')
         if(typeof amountOfUsers != 'number') throw new TypeError('Easy Level TypeError: Type of \'amount of users\' must be a number')
-        const bufferedChart = generateChartImage(this.dbName, this.db, amountOfUsers, guildId, this.client)
+        const bufferedChart = generateChartImage(this.db, amountOfUsers, guildId, this.client)
         return bufferedChart
     }
 }

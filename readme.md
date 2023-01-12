@@ -1,5 +1,7 @@
 # Discord Easy Leveling
 
+### This is a modified version of Discord Easy Leveling, this doesn't support
+
 A complete framework to implement a leveling system using discord.js v13
 
 # Why discord-easy-leveling?
@@ -29,7 +31,6 @@ const options = {
     startingXP: 0,
     startingLevel: 1,
     levelUpXP: 100,
-    database: 'sqlite' // or 'json'
 }
 const leveling = new EasyLeveling(client, options)
 // creating a new 'EasyLeveling' client
