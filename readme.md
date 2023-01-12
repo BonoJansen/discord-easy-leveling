@@ -1,6 +1,6 @@
 # Discord Easy Leveling
 
-### This is a modified version of Discord Easy Leveling, this doesn't support
+### This is a modified version of Discord Easy Leveling, this doesn't support Quick.db
 
 A complete framework to implement a leveling system using discord.js v13
 
