@@ -16,7 +16,7 @@
     "clean-jsdoc-theme": "^3.3.4",
     "discord-api-types": "^0.33.5",
     "discord.js": "^13.12.0",
-    "easy-json-database": "^1.5.0",
+    "easy-json-database": "github:BonoJansen/easy-json-database",
     "events": "^3.3.0"
   },
   "keywords": [
